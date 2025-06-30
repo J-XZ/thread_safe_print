@@ -1,0 +1,4 @@
+CompileFlags:       
+  CompilationDatabase: ./cmake/build
+Hover:
+  ShowAKA: Yes
