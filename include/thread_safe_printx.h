@@ -12,8 +12,10 @@
 namespace thread_safe_print {
 
 class ThreadLocalLogBuilder {
- public:
-  explicit ThreadLocalLogBuilder(const std::string &init_data) { ssx_.str(init_data); }
+public:
+  explicit ThreadLocalLogBuilder(const std::string &init_data) {
+    ssx_.str(init_data);
+  }
 
   void AddData(const std::string &data) {
     auto g = GetLockGuard_();
@@ -33,7 +35,7 @@ class ThreadLocalLogBuilder {
   }
 
   bool BeginWith(char a) {
-    auto g        = GetLockGuard_();
+    auto g = GetLockGuard_();
     std::string c = ssx_.str();
     if (c.empty()) {
       return false;
@@ -42,7 +44,7 @@ class ThreadLocalLogBuilder {
   }
 
   bool IfBeginWithThenAppend(char a, const std::string &data) {
-    auto g        = GetLockGuard_();
+    auto g = GetLockGuard_();
     std::string c = ssx_.str();
     if (c.empty()) {
       return false;
@@ -55,7 +57,7 @@ class ThreadLocalLogBuilder {
   }
 
   bool IfBeginWithThenAppend(char a, const std::stringstream &ss) {
-    auto g        = GetLockGuard_();
+    auto g = GetLockGuard_();
     std::string c = ssx_.str();
     if (c.empty()) {
       return false;
@@ -73,7 +75,7 @@ class ThreadLocalLogBuilder {
     ssx_.str("");
   }
 
- private:
+private:
   void Lock_() {
     while (ssx_spin_mutex_.test_and_set(std::memory_order_acquire)) {
       ;
@@ -83,16 +85,20 @@ class ThreadLocalLogBuilder {
   void Unlock_() { ssx_spin_mutex_.clear(std::memory_order_release); }
 
   class LockGuard {
-   public:
-    explicit LockGuard(ThreadLocalLogBuilder *builder) : builder_(builder) { builder_->Lock_(); }
+  public:
+    explicit LockGuard(ThreadLocalLogBuilder *builder) : builder_(builder) {
+      builder_->Lock_();
+    }
 
     ~LockGuard() { builder_->Unlock_(); }
 
-   private:
+  private:
     ThreadLocalLogBuilder *builder_;
   };
 
-  std::unique_ptr<LockGuard> GetLockGuard_() { return std::make_unique<LockGuard>(this); }
+  std::unique_ptr<LockGuard> GetLockGuard_() {
+    return std::make_unique<LockGuard>(this);
+  }
 
   std::stringstream ssx_;
   std::atomic_flag ssx_spin_mutex_ = ATOMIC_FLAG_INIT;
@@ -102,7 +108,7 @@ extern thread_local std::stringstream global_ss, global_ss_tmp;
 extern thread_local bool to_err, to_alert;
 
 static void PrintFinal() {
-  global_ss << std::endl;  // NOLINT
+  global_ss << std::endl; // NOLINT
   if (to_err) {
     if (!to_alert) {
       std::stringstream ss;
@@ -154,8 +160,7 @@ static auto ToString(const std::vector<T> &v) -> std::string {
   return ss.str();
 }
 
-template <typename T>
-auto ToString(const T &value) -> std::string {
+template <typename T> auto ToString(const T &value) -> std::string {
   std::stringstream oss{};
   oss << value;
   auto ret = oss.str();
@@ -167,7 +172,7 @@ auto ToString(const T &value) -> std::string {
 
 template <typename T, typename... Args>
 void ToStringArgs(const T &value, const Args &...args) {
-  auto s           = ToString(value);
+  auto s = ToString(value);
   std::string link = " ";
   if (s[0] == '\n') {
     link = "\n";
@@ -189,7 +194,7 @@ auto MyToString(const T &value, const Args &...args) -> std::string {
   global_ss_tmp.str("");
   global_ss_tmp.clear();
 
-  auto s           = ToString(value);
+  auto s = ToString(value);
   std::string link = " ";
   if (global_ss_tmp.str().empty()) {
     link = "";
@@ -198,7 +203,8 @@ auto MyToString(const T &value, const Args &...args) -> std::string {
     link = "\n";
     s.erase(0, 1);
   }
-  if (!global_ss_tmp.str().empty() && global_ss_tmp.str()[global_ss_tmp.str().size() - 1] == '\n') {
+  if (!global_ss_tmp.str().empty() &&
+      global_ss_tmp.str()[global_ss_tmp.str().size() - 1] == '\n') {
     link = "";
   }
 
@@ -215,7 +221,7 @@ void PrepareBuffer(const T &value, const Args &...args) {
   global_ss.clear();
   global_ss.str("");
   global_ss << kMyLogHead;
-  global_ss << MyToString(value, args...);  // NOLINT
+  global_ss << MyToString(value, args...); // NOLINT
   PrintFinal();
 }
 
@@ -223,14 +229,14 @@ static void ThreadSafePrintEmptyLine() { std::cout << "" << std::flush; }
 
 template <typename T, typename... Args>
 void ThreadSafePrintLine(const T &value, const Args &...args) {
-  to_err   = false;
+  to_err = false;
   to_alert = false;
   PrepareBuffer(value, args...);
 }
 
 template <typename T, typename... Args>
 void ThreadSafePrintLineToStdErr(const T &value, const Args &...args) {
-  to_err   = true;
+  to_err = true;
   to_alert = false;
 
   PrepareBuffer(value, args...);
@@ -238,7 +244,7 @@ void ThreadSafePrintLineToStdErr(const T &value, const Args &...args) {
 
 template <typename T, typename... Args>
 void ThreadSafePrintLineToAllert(const T &value, const Args &...args) {
-  to_err   = true;
+  to_err = true;
   to_alert = true;
 
   PrepareBuffer(value, args...);
@@ -250,4 +256,4 @@ static std::string Uint64ToBinaryString(uint64_t value) {
   return bs.to_string();
 }
 
-}  // namespace thread_safe_print
+} // namespace thread_safe_print
